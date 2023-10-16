@@ -1,7 +1,17 @@
-﻿namespace De.Hochstaetter.FroniusShared.Models;
+﻿using System.Diagnostics;
 
-public class SolarSystem : BindableBase
+namespace De.Hochstaetter.FroniusShared.Models;
+
+public class SolarSystem : BindableBase, ISolarSystem
 {
+    private readonly SettingsShared settings;
+    private Lazy<IList<SmartMeterCalibrationHistoryItem>>? historyLazy;
+
+    public SolarSystem(SettingsShared settings)
+    {
+        this.settings = settings;
+    }
+
     private Gen24PowerFlow? sitePowerFlow;
 
     public Gen24PowerFlow? SitePowerFlow
@@ -18,33 +28,125 @@ public class SolarSystem : BindableBase
 
     public double? GridPowerCorrected => SitePowerFlow?.GridPower * (SitePowerFlow?.GridPower < 0 ? GetProducedFactor() : GetConsumedFactor());
 
-    private static readonly IList<SmartMeterCalibrationHistoryItem> history = IoC.TryGet<IDataCollectionService>()?.SmartMeterHistory!;
+    public Task ReadCalibrationHistory() => Task.Run(() =>
+    {
+        // Initialize history only when ReadCalibrationHistory is called for the first time.
+        historyLazy ??= new Lazy<IList<SmartMeterCalibrationHistoryItem>>(() =>
+        {
+            if (!string.IsNullOrWhiteSpace(settings.DriftFileName) && File.Exists(settings.DriftFileName))
+            {
+                try
+                {
+                    var serializer = new XmlSerializer(typeof(List<SmartMeterCalibrationHistoryItem>));
+                    using var stream = new FileStream(settings.DriftFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    return serializer.Deserialize(stream) as IList<SmartMeterCalibrationHistoryItem> ?? new List<SmartMeterCalibrationHistoryItem>();
+                }
+                catch (Exception)
+                {
+                    return new List<SmartMeterCalibrationHistoryItem>();
+                }
+            }
+            return new List<SmartMeterCalibrationHistoryItem>();
+        });
+    });
+
+    public async Task WriteCalibrationHistoryItem(double consumedEnergyOffset, double producedEnergyOffset)
+    {
+        await ReadCalibrationHistory(); // Ensure the list is initialized before proceeding.
+        Debug.Assert(historyLazy != null, nameof(historyLazy) + " != null");
+
+        if (string.IsNullOrWhiteSpace(settings.DriftFileName))
+        {
+            return;
+        }
+
+        var directoryName = Path.GetDirectoryName(settings.DriftFileName);
+
+        if (!Directory.Exists(Path.GetDirectoryName(settings.DriftFileName)))
+        {
+            try
+            {
+                Directory.CreateDirectory(directoryName!);
+            }
+            catch
+            {
+                return;
+            }
+        }
+
+        // TODO: remove
+        if (IoC.Get<IDataCollectionService>().HomeAutomationSystem is not { } homeAutomationSystem)
+            return;
+
+        var newItem = new SmartMeterCalibrationHistoryItem
+        {
+            CalibrationDate = DateTime.UtcNow,
+            ConsumedOffset = consumedEnergyOffset,
+            ProducedOffset = producedEnergyOffset,
+
+            // TODO: this should be taken from the primary inverter, remove homeAutomationSystem
+            EnergyRealConsumed = homeAutomationSystem.Gen24Sensors?.PrimaryPowerMeter?.EnergyActiveConsumed ?? double.NaN,
+            EnergyRealProduced = homeAutomationSystem.Gen24Sensors?.PrimaryPowerMeter?.EnergyActiveProduced ?? double.NaN
+        };
+
+        historyLazy.Value.Add(newItem);
+
+        if (historyLazy.Value.Count > 50)
+        {
+            historyLazy.Value.RemoveAt(0);
+        }
+
+        var serializer = new XmlSerializer(typeof(List<SmartMeterCalibrationHistoryItem>));
+        await using var stream = new FileStream(settings.DriftFileName, FileMode.Create, FileAccess.Write, FileShare.None);
+        await using var writer = XmlWriter.Create(stream, new XmlWriterSettings
+        {
+            Encoding = Encoding.UTF8,
+            Indent = true,
+            IndentChars = new string(' ', 3),
+            NewLineChars = Environment.NewLine,
+            Async = true
+        });
+        serializer.Serialize(writer, historyLazy.Value as List<SmartMeterCalibrationHistoryItem> ?? historyLazy.Value.ToList());
+    }
+
+    public IList<SmartMeterCalibrationHistoryItem> SmartMeterHistory
+    {
+        get
+        {
+            if (historyLazy == null)
+            {
+                throw new InvalidOperationException("Calibration History has not been initialized yet.");
+            }
+
+            return historyLazy.Value;
+        }
+    }
 
     private static double consumedFactor = 1;
     private static int oldSmartMeterHistoryCountConsumed;
 
-    private static double GetConsumedFactor()
+    private double GetConsumedFactor()
     {
-        if (oldSmartMeterHistoryCountConsumed != history.Count)
+        if (oldSmartMeterHistoryCountConsumed != SmartMeterHistory.Count)
         {
-            var consumed = (IReadOnlyList<SmartMeterCalibrationHistoryItem>)history.Where(item => double.IsFinite(item.ConsumedOffset)).ToList();
+            var consumed = (IReadOnlyList<SmartMeterCalibrationHistoryItem>)SmartMeterHistory.Where(item => double.IsFinite(item.ConsumedOffset)).ToList();
             consumedFactor = CalculateSmartMeterFactor(consumed, false);
-            oldSmartMeterHistoryCountConsumed = history.Count;
+            oldSmartMeterHistoryCountConsumed = SmartMeterHistory.Count;
         }
 
         return consumedFactor;
     }
 
-    private static double producedFactor = 1;
+    private double producedFactor = 1;
     private static int oldSmartMeterHistoryCountProduced;
 
-    private static double GetProducedFactor()
+    private double GetProducedFactor()
     {
-        if (oldSmartMeterHistoryCountProduced != history.Count)
+        if (oldSmartMeterHistoryCountProduced != SmartMeterHistory.Count)
         {
-            var produced = (IReadOnlyList<SmartMeterCalibrationHistoryItem>)history.Where(item => double.IsFinite(item.ProducedOffset)).ToList();
+            var produced = (IReadOnlyList<SmartMeterCalibrationHistoryItem>)SmartMeterHistory.Where(item => double.IsFinite(item.ProducedOffset)).ToList();
             producedFactor = CalculateSmartMeterFactor(produced, true);
-            oldSmartMeterHistoryCountProduced = history.Count;
+            oldSmartMeterHistoryCountProduced = SmartMeterHistory.Count;
         }
 
         return producedFactor;

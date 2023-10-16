@@ -179,11 +179,12 @@ public abstract class GridMeterCorrectorBase : ConverterBase
             return 0;
         }
 
-        if (count != dataCollectionService.SmartMeterHistory.Count)
+        var solarSystem = dataCollectionService.HomeAutomationSystem?.SolarSystem;
+        if (solarSystem?.SmartMeterHistory != null && count != solarSystem.SmartMeterHistory.Count)
         {
-            count = dataCollectionService.SmartMeterHistory.Count;
-            first = dataCollectionService.SmartMeterHistory.FirstOrDefault(item => double.IsFinite(GetOffset(item, EnergyDirection)));
-            last = dataCollectionService.SmartMeterHistory.LastOrDefault(item => double.IsFinite(GetOffset(item, EnergyDirection)));
+            count = solarSystem.SmartMeterHistory.Count;
+            first = solarSystem.SmartMeterHistory.FirstOrDefault(item => double.IsFinite(GetOffset(item, EnergyDirection)));
+            last = solarSystem.SmartMeterHistory.LastOrDefault(item => double.IsFinite(GetOffset(item, EnergyDirection)));
 
             if (last is not null)
             {

@@ -56,6 +56,7 @@ public partial class App
             .AddSingleton<IFritzBoxService, FritzBoxService>()
             .AddSingleton(SynchronizationContext.Current!)
             .AddSingleton<IDataCollectionService, DataCollectionService>()
+            .AddSingleton<ISolarSystem, SolarSystem>()
             .AddSingleton<MainWindow>()
             .AddSingleton<MainViewModel>()
             .AddSingleton<IGen24JsonService, Gen24JsonService>()

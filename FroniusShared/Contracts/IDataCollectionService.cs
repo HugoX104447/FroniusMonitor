@@ -11,7 +11,6 @@ public interface IDataCollectionService
     public BindableCollection<ISwitchable>? SwitchableDevices { get; }
 
     public int FroniusUpdateRate { get; set; }
-    IList<SmartMeterCalibrationHistoryItem> SmartMeterHistory { get; }
 
     event EventHandler<SolarDataEventArgs>? NewDataReceived;
 
@@ -20,8 +19,6 @@ public interface IDataCollectionService
     void SuspendPowerConsumers();
     void ResumePowerConsumers();
     void InvalidateFritzBox();
-    Task<IList<SmartMeterCalibrationHistoryItem>> ReadCalibrationHistory();
-    Task<IList<SmartMeterCalibrationHistoryItem>> AddCalibrationHistoryItem(double consumedEnergyOffsetWattHours, double producedEnergyOffsetWattHours);
     IServiceProvider Container { get; }
     IServiceProvider? Container2 { get; }
 }

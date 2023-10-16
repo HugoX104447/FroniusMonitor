@@ -2,8 +2,13 @@
 
 public class HomeAutomationSystem : BindableBase
 {
-    private SolarSystem? solarSystem;
-    public SolarSystem? SolarSystem
+    public HomeAutomationSystem(ISolarSystem solarSystem)
+    {
+        this.solarSystem = solarSystem;
+    }
+
+    private ISolarSystem? solarSystem;
+    public ISolarSystem? SolarSystem
     {
         get => solarSystem;
         set => Set(ref solarSystem, value);

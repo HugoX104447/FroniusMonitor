@@ -90,80 +90,6 @@ public class DataCollectionService : BindableBase, IDataCollectionService
 
     public int FroniusUpdateRate { get; set; }
 
-    public IList<SmartMeterCalibrationHistoryItem> SmartMeterHistory { get; private set; } = new List<SmartMeterCalibrationHistoryItem>();
-
-    public Task<IList<SmartMeterCalibrationHistoryItem>> ReadCalibrationHistory() => Task.Run(() =>
-    {
-        if (string.IsNullOrWhiteSpace(settings.DriftFileName) || !File.Exists(settings.DriftFileName))
-        {
-            return new List<SmartMeterCalibrationHistoryItem>();
-        }
-
-        try
-        {
-            var serializer = new XmlSerializer(typeof(List<SmartMeterCalibrationHistoryItem>));
-            using var stream = new FileStream(settings.DriftFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return serializer.Deserialize(stream) as IList<SmartMeterCalibrationHistoryItem> ?? new List<SmartMeterCalibrationHistoryItem>();
-        }
-        catch (Exception)
-        {
-            return new List<SmartMeterCalibrationHistoryItem>();
-        }
-    });
-
-    public Task<IList<SmartMeterCalibrationHistoryItem>> AddCalibrationHistoryItem(double consumedEnergyOffset, double producedEnergyOffset) => Task.Run(() =>
-    {
-        if (string.IsNullOrWhiteSpace(settings.DriftFileName))
-        {
-            return SmartMeterHistory;
-        }
-
-        var directoryName = Path.GetDirectoryName(settings.DriftFileName);
-
-        if (!Directory.Exists(Path.GetDirectoryName(settings.DriftFileName)))
-        {
-            try
-            {
-                Directory.CreateDirectory(directoryName!);
-            }
-            catch
-            {
-                return SmartMeterHistory;
-            }
-        }
-
-        var newItem = new SmartMeterCalibrationHistoryItem
-        {
-            CalibrationDate = DateTime.UtcNow,
-            ConsumedOffset = consumedEnergyOffset,
-            ProducedOffset = producedEnergyOffset,
-            EnergyRealConsumed = HomeAutomationSystem?.Gen24Sensors?.PrimaryPowerMeter?.EnergyActiveConsumed ?? double.NaN,
-            EnergyRealProduced = HomeAutomationSystem?.Gen24Sensors?.PrimaryPowerMeter?.EnergyActiveProduced ?? double.NaN,
-        };
-
-        SmartMeterHistory.Add(newItem);
-
-        if (SmartMeterHistory.Count > 50)
-        {
-            SmartMeterHistory.RemoveAt(1);
-        }
-
-        var serializer = new XmlSerializer(typeof(List<SmartMeterCalibrationHistoryItem>));
-        using var stream = new FileStream(settings.DriftFileName, FileMode.Create, FileAccess.Write, FileShare.None);
-
-        using var writer = XmlWriter.Create(stream, new XmlWriterSettings
-        {
-            Encoding = Encoding.UTF8,
-            Indent = true,
-            IndentChars = new string(' ', 3),
-            NewLineChars = Environment.NewLine,
-        });
-
-        serializer.Serialize(writer, SmartMeterHistory as List<SmartMeterCalibrationHistoryItem> ?? SmartMeterHistory.ToList());
-
-        return SmartMeterHistory;
-    });
-
     [SuppressMessage("ReSharper", "ParameterHidesMember")]
     public async Task Start(WebConnection? gen24WebConnection, WebConnection? gen24WebConnection2, WebConnection? fritzBoxConnection, WebConnection? wattPilotConnection)
     {
@@ -219,9 +145,10 @@ public class DataCollectionService : BindableBase, IDataCollectionService
 
     private async ValueTask<HomeAutomationSystem> CreateSolarSystem(WebConnection? gen24WebConnection, WebConnection? gen24WebConnection2, WebConnection? fritzBoxConnection, CancellationToken token)
     {
-        var result = new HomeAutomationSystem();
-        result.SolarSystem = new SolarSystem();
-        SmartMeterHistory = await ReadCalibrationHistory().ConfigureAwait(false);
+        var solarSystem = IoC.Get<ISolarSystem>();
+        await solarSystem. ReadCalibrationHistory().ConfigureAwait(false);
+
+        var result = new HomeAutomationSystem(solarSystem);
 
         if (gen24WebConnection != null)
         {
