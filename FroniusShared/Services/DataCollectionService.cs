@@ -1,4 +1,6 @@
-﻿namespace De.Hochstaetter.FroniusShared.Services;
+﻿using System.Diagnostics;
+
+namespace De.Hochstaetter.FroniusShared.Services;
 
 public class DataCollectionService : BindableBase, IDataCollectionService
 {
@@ -218,6 +220,7 @@ public class DataCollectionService : BindableBase, IDataCollectionService
     private async ValueTask<HomeAutomationSystem> CreateSolarSystem(WebConnection? gen24WebConnection, WebConnection? gen24WebConnection2, WebConnection? fritzBoxConnection, CancellationToken token)
     {
         var result = new HomeAutomationSystem();
+        result.SolarSystem = new SolarSystem();
         SmartMeterHistory = await ReadCalibrationHistory().ConfigureAwait(false);
 
         if (gen24WebConnection != null)
@@ -463,7 +466,8 @@ public class DataCollectionService : BindableBase, IDataCollectionService
                 var powerFlow = HomeAutomationSystem.Gen24Sensors?.PowerFlow;
                 var powerFlow2 = HomeAutomationSystem.Gen24Sensors2?.PowerFlow;
 
-                HomeAutomationSystem.SitePowerFlow = new Gen24PowerFlow
+                Debug.Assert(HomeAutomationSystem.SolarSystem != null, "HomeAutomationSystem.SolarSystem != null");
+                HomeAutomationSystem.SolarSystem.SitePowerFlow = new Gen24PowerFlow
                 {
                     LoadPower = (powerFlow?.LoadPower ?? -powerFlow?.InverterAcPower ?? 0) + (powerFlow2?.LoadPower ?? -powerFlow2?.InverterAcPower ?? 0),
                     GridPower = (powerFlow?.GridPower ?? 0) + (powerFlow2?.GridPower ?? 0),
@@ -493,4 +497,3 @@ public class DataCollectionService : BindableBase, IDataCollectionService
         }
     }
 }
-//

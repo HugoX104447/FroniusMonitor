@@ -154,7 +154,7 @@ public partial class InverterControl
 
         var inverter = gen24Sensors?.Inverter;
         var dataManager = gen24Sensors?.DataManager;
-        var sitePowerFlow = e.HomeAutomationSystem?.SitePowerFlow;
+        var sitePowerFlow = e.HomeAutomationSystem?.SolarSystem?.SitePowerFlow;
 
         if
         (
@@ -212,8 +212,8 @@ public partial class InverterControl
                 case InverterDisplayMode.MoreEfficiency:
                     MoreEfficiencyLoss.Value = gen24Sensors?.PowerFlow?.PowerLoss ?? 0;
                     MoreEfficiencyEfficiency.Value = gen24Sensors?.PowerFlow?.Efficiency ?? 0;
-                    MoreEfficiencySelfConsumption.Value = Math.Max(Math.Min(-e.HomeAutomationSystem?.LoadPowerCorrected / sitePowerFlow?.InverterAcPower ?? 0, 1), 0);
-                    MoreEfficiencySelfSufficiency.Value = e.HomeAutomationSystem?.LoadPowerCorrected > 0 ? 1 : Math.Max(Math.Min(-sitePowerFlow?.InverterAcPower / e.HomeAutomationSystem?.LoadPowerCorrected ?? 0, 1d), 0);
+                    MoreEfficiencySelfConsumption.Value = Math.Max(Math.Min(-e.HomeAutomationSystem?.SolarSystem?.LoadPowerCorrected / sitePowerFlow?.InverterAcPower ?? 0, 1), 0);
+                    MoreEfficiencySelfSufficiency.Value = e.HomeAutomationSystem?.SolarSystem?.LoadPowerCorrected > 0 ? 1 : Math.Max(Math.Min(-sitePowerFlow?.InverterAcPower / e.HomeAutomationSystem?.SolarSystem?.LoadPowerCorrected ?? 0, 1d), 0);
                     break;
             }
         });

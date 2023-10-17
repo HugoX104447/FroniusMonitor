@@ -175,9 +175,9 @@ public partial class MainWindow
         }
 
         var homeAutomationSystem = ViewModel.DataCollectionService.HomeAutomationSystem;
-        var sitePowerFlow = homeAutomationSystem?.SitePowerFlow;
-        LoadArrow.Power = homeAutomationSystem?.LoadPowerCorrected - (ViewModel.IncludeInverterPower ? homeAutomationSystem?.LoadPowerCorrected + sitePowerFlow?.SolarPower + homeAutomationSystem?.GridPowerCorrected + sitePowerFlow?.StoragePower : 0);
-        LoadArrowPrimaryInverter.Power = homeAutomationSystem?.LoadPowerCorrected - (ViewModel.IncludeInverterPower ? homeAutomationSystem?.LoadPowerCorrected + PowerFlow?.SolarPower + homeAutomationSystem?.GridPowerCorrected + PowerFlow?.StoragePower : 0);
+        var sitePowerFlow = homeAutomationSystem?.SolarSystem?.SitePowerFlow;
+        LoadArrow.Power = homeAutomationSystem?.SolarSystem?.LoadPowerCorrected - (ViewModel.IncludeInverterPower ? homeAutomationSystem?.SolarSystem?.LoadPowerCorrected + sitePowerFlow?.SolarPower + homeAutomationSystem?.SolarSystem?.GridPowerCorrected + sitePowerFlow?.StoragePower : 0);
+        LoadArrowPrimaryInverter.Power = homeAutomationSystem?.SolarSystem?.LoadPowerCorrected - (ViewModel.IncludeInverterPower ? homeAutomationSystem?.SolarSystem?.LoadPowerCorrected + PowerFlow?.SolarPower + homeAutomationSystem?.SolarSystem?.GridPowerCorrected + PowerFlow?.StoragePower : 0);
 
         ColorLoadArrow(LoadArrow, sitePowerFlow, Brushes.Salmon);
         ColorLoadArrow(LoadArrowPrimaryInverter, PowerFlow, new SolidColorBrush(Color.FromRgb(0xff, 0xd0, 0)));

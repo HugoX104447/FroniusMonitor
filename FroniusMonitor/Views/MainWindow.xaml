@@ -137,7 +137,7 @@
                     <StackPanel Orientation="Horizontal" Margin="120,-40,0,0">
 
                         <c:PowerFlowArrow Angle="-30" Fill="LightGray"
-                                          Power="{Binding DataCollectionService.HomeAutomationSystem.GridPowerCorrected, FallbackValue={x:Null}}" />
+                                          Power="{Binding DataCollectionService.HomeAutomationSystem.SolarSystem.GridPowerCorrected, FallbackValue={x:Null}}" />
 
                         <c:PowerFlowArrow Angle="30" Margin="80,0,0,0" Fill="LightGreen" HasRightPlacement="True"
                                           Power="{Binding DataCollectionService.HomeAutomationSystem.Gen24Sensors.PowerFlow.StoragePower, FallbackValue={x:Null}}"
@@ -221,14 +221,14 @@
                                       Gen24="{Binding DataCollectionService.HomeAutomationSystem.Gen24Sensors, FallbackValue={x:Null}}"
                                       Visibility="{Binding DataCollectionService.HomeAutomationSystem.Gen24Sensors.Storage, Converter={co:NullToVisibility Null=Hidden}, FallbackValue=Hidden}" />
                     <c:House Grid.Column="3" Width="240" Foreground="Black" VerticalAlignment="Bottom" Margin="10,0,0,3"
-                             PowerLossWatts="{Binding DataCollectionService.HomeAutomationSystem.SitePowerFlow.PowerLoss, FallbackValue={x:Null}}"
-                             Efficiency="{Binding DataCollectionService.HomeAutomationSystem.SitePowerFlow.Efficiency, FallbackValue={x:Null}}"
-                             ProductionWatts="{Binding DataCollectionService.HomeAutomationSystem.SitePowerFlow.SolarPower, FallbackValue={x:Null}}">
+                             PowerLossWatts="{Binding DataCollectionService.HomeAutomationSystem.SolarSystem.SitePowerFlow.PowerLoss, FallbackValue={x:Null}}"
+                             Efficiency="{Binding DataCollectionService.HomeAutomationSystem.SolarSystem.SitePowerFlow.Efficiency, FallbackValue={x:Null}}"
+                             ProductionWatts="{Binding DataCollectionService.HomeAutomationSystem.SolarSystem.SitePowerFlow.SolarPower, FallbackValue={x:Null}}">
                         <c:House.ConsumptionWatts>
                             <MultiBinding Converter="{co:HouseConsumptionConverter}">
-                                <Binding Path="DataCollectionService.HomeAutomationSystem.LoadPowerCorrected" FallbackValue="{x:Null}" />
+                                <Binding Path="DataCollectionService.HomeAutomationSystem.SolarSystem.LoadPowerCorrected" FallbackValue="{x:Null}" />
                                 <Binding Path="DataCollectionService.HomeAutomationSystem.WattPilot.PowerTotal" FallbackValue="{x:Null}" />
-                                <Binding Path="DataCollectionService.HomeAutomationSystem.SitePowerFlow.PowerLoss" FallbackValue="{x:Null}"/>
+                                <Binding Path="DataCollectionService.HomeAutomationSystem.SolarSystem.SitePowerFlow.PowerLoss" FallbackValue="{x:Null}"/>
                                 <Binding Path="Settings.AddInverterPowerToConsumption" FallbackValue="{x:Null}"/>
                             </MultiBinding>
                         </c:House.ConsumptionWatts>
